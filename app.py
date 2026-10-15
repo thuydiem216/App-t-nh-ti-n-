@@ -47,8 +47,7 @@ from pathlib import Path
 # ==========================================
 st.set_page_config(
     page_title="Tiệm trà Hoàng hôn",
-    page_icon="banner.png" \
-",
+    page_icon="banner.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
