@@ -1,56 +1,24 @@
 
 from pathlib import Path
-import streamlit as st
-
-# Lấy đường dẫn thư mục chứa app.py
-BASE_DIR = Path(__file__).resolve().parent
-LOGO_PATH = BASE_DIR / "logo_hoang_hon.png"
-
-# Hiển thị logo và tiêu đề
-col_logo, col_title = st.columns([1, 4])
-
-with col_logo:
-    
-from pathlib import Path
-import streamlit as st
-
-
-from pathlib import Path
-import streamlit as st
-
-# Tìm ảnh banner.png nằm cùng thư mục với app.py
-logo_path = Path(__file__).resolve().parent / "banner.png"
-
-if logo_path.is_file():
-    st.image(
-        str(logo_path),
-        width=250,
-        caption="Tiệm trà Hoàng hôn"
-    )
-else:
-    st.error("Không tìm thấy ảnh banner.png")
-    st.write("Ứng dụng đang tìm ảnh tại:")
-    st.code(str(logo_path))
-
-
-with col_title:
-    st.title("TIỆM TRÀ HOÀNG HÔN")
-    st.subheader("Hương vị dịu dàng, khoảnh khắc hoàng hôn")
-    st.caption("Ứng dụng gọi món · Tính tiền · Xuất hóa đơn")
-
-import streamlit as st
 from datetime import datetime
-from pathlib import Path
+
+import streamlit as st
 
 # ==========================================
 # 1. CẤU HÌNH ỨNG DỤNG
 # ==========================================
+BASE_DIR = Path(__file__).resolve().parent
+
 st.set_page_config(
     page_title="Tiệm trà Hoàng hôn",
-    page_icon="banner.png",
+    page_icon="🧋",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
+
+# Ưu tiên logo_hoang_hon.png, nếu không có thì dùng banner.png
+LOGO_PATH = BASE_DIR / "logo_hoang_hon.png"
+BANNER_PATH = BASE_DIR / "banner.png"
 
 # ==========================================
 # 2. MENU VÀ BẢNG GIÁ
@@ -108,14 +76,17 @@ if "paid_time" not in st.session_state:
 # 4. HÀM XỬ LÝ
 # ==========================================
 def money(amount):
+    """Định dạng tiền Việt Nam."""
     return f"{amount:,.0f} đ".replace(",", ".")
 
 
 def unit_price(item):
+    """Tính giá một ly, gồm giá gốc, size và topping."""
     topping_cost = sum(
         TOPPING_PRICE[topping]
         for topping in item["toppings"]
     )
+
     return (
         item["base_price"]
         + SIZE_PRICE[item["size"]]
@@ -124,14 +95,20 @@ def unit_price(item):
 
 
 def item_total(item):
+    """Tính thành tiền của một món."""
     return unit_price(item) * item["quantity"]
 
 
 def total_amount():
-    return sum(item_total(item) for item in st.session_state.cart)
+    """Tính tổng tiền đơn hàng."""
+    return sum(
+        item_total(item)
+        for item in st.session_state.cart
+    )
 
 
 def total_quantity():
+    """Tính tổng số ly."""
     return sum(
         item["quantity"]
         for item in st.session_state.cart
@@ -139,6 +116,7 @@ def total_quantity():
 
 
 def receipt_text():
+    """Tạo nội dung hóa đơn dạng văn bản."""
     lines = [
         "========================================",
         "          TIEM TRA HOANG HON",
@@ -150,7 +128,9 @@ def receipt_text():
         "----------------------------------------",
     ]
 
-    for index, item in enumerate(st.session_state.cart, start=1):
+    for index, item in enumerate(
+        st.session_state.cart, start=1
+    ):
         toppings = ", ".join(item["toppings"]) or "Khong topping"
 
         lines.extend([
@@ -179,13 +159,13 @@ def receipt_text():
 # ==========================================
 # 5. LOGO VÀ TIÊU ĐỀ
 # ==========================================
-logo_path = Path(__file__).parent / "logo_hoang_hon.png"
-
-header_left, header_right = st.columns([1, 3])
+header_left, header_right = st.columns([1, 4])
 
 with header_left:
-    if logo_path.exists():
-        st.image(str(logo_path), width=220)
+    if LOGO_PATH.is_file():
+        st.image(str(LOGO_PATH), width=200)
+    elif BANNER_PATH.is_file():
+        st.image(str(BANNER_PATH), width=200)
     else:
         st.markdown("# 🧋")
 
@@ -201,7 +181,7 @@ st.divider()
 # ==========================================
 st.header("👤 Thông tin khách hàng")
 
-customer_name = st.text_input(
+st.text_input(
     "Tên khách hàng",
     key="customer",
     placeholder="Nhập tên khách hàng...",
@@ -263,7 +243,7 @@ with st.form("drink_form"):
         )
 
     st.info(
-        f"Giá gốc: {money(MENU[drink])} / ly  |  "
+        f"Giá gốc: {money(MENU[drink])} / ly | "
         f"Phụ thu size: {money(SIZE_PRICE[size])}"
     )
 
@@ -273,23 +253,23 @@ with st.form("drink_form"):
         disabled=st.session_state.paid,
     )
 
-    if add_button:
-        if not st.session_state.customer.strip():
-            st.warning("Vui lòng nhập tên khách hàng trước.")
-        else:
-            new_item = {
-                "name": drink,
-                "base_price": MENU[drink],
-                "size": size,
-                "quantity": int(quantity),
-                "sugar": sugar,
-                "ice": ice,
-                "toppings": list(toppings),
-            }
+if add_button:
+    if not st.session_state.customer.strip():
+        st.warning("Vui lòng nhập tên khách hàng trước.")
+    else:
+        new_item = {
+            "name": drink,
+            "base_price": MENU[drink],
+            "size": size,
+            "quantity": int(quantity),
+            "sugar": sugar,
+            "ice": ice,
+            "toppings": list(toppings),
+        }
 
-            st.session_state.cart.append(new_item)
-            st.success(f"Đã thêm {drink} vào đơn hàng.")
-            st.rerun()
+        st.session_state.cart.append(new_item)
+        st.success(f"Đã thêm {drink} vào đơn hàng.")
+        st.rerun()
 
 # ==========================================
 # 8. CHI TIẾT ĐƠN HÀNG
@@ -299,6 +279,7 @@ st.header("🛒 Đơn hàng của khách")
 
 if not st.session_state.cart:
     st.info("Đơn hàng đang trống. Hãy chọn đồ uống để bắt đầu.")
+
 else:
     for index, item in enumerate(st.session_state.cart):
         with st.container(border=True):
@@ -306,18 +287,24 @@ else:
 
             with info_col:
                 st.markdown(f"**{index + 1}. {item['name']}**")
+
                 st.write(
                     f"Size {item['size']} · "
                     f"Số lượng: {item['quantity']}"
                 )
+
                 st.caption(
                     f"Đường: {item['sugar']} · Đá: {item['ice']}"
                 )
+
                 st.caption(
                     "Topping: "
                     + (", ".join(item["toppings"]) or "Không topping")
                 )
-                st.caption(f"Đơn giá: {money(unit_price(item))}")
+
+                st.caption(
+                    f"Đơn giá: {money(unit_price(item))}"
+                )
 
             with price_col:
                 st.markdown("**Thành tiền**")
@@ -351,8 +338,13 @@ else:
     st.header("💳 Thanh toán")
 
     if not st.session_state.paid:
-        st.write(f"Khách hàng: **{st.session_state.customer or 'Chưa nhập'}**")
-        st.write(f"Số tiền cần thanh toán: **{money(total_amount())}**")
+        st.write(
+            f"Khách hàng: **{st.session_state.customer or 'Chưa nhập'}**"
+        )
+
+        st.write(
+            f"Số tiền cần thanh toán: **{money(total_amount())}**"
+        )
 
         if st.button(
             "✅ THANH TOÁN VÀ XUẤT HÓA ĐƠN",
@@ -361,20 +353,26 @@ else:
         ):
             if not st.session_state.customer.strip():
                 st.error("Vui lòng nhập tên khách hàng.")
+
             elif not st.session_state.cart:
                 st.error("Đơn hàng chưa có món.")
+
             else:
-                st.session_state.paid = True
-                st.session_state.invoice_no = datetime.now().strftime(
+                now = datetime.now()
+
+                st.session_state.invoice_no = now.strftime(
                     "HD%Y%m%d%H%M%S"
                 )
-                st.session_state.paid_time = datetime.now().strftime(
+
+                st.session_state.paid_time = now.strftime(
                     "%d/%m/%Y %H:%M:%S"
                 )
+
+                st.session_state.paid = True
                 st.rerun()
 
     # ==========================================
-    # 10. HIỂN THỊ HÓA ĐƠN SAU THANH TOÁN
+    # 10. HÓA ĐƠN SAU THANH TOÁN
     # ==========================================
     if st.session_state.paid:
         st.success("Thanh toán thành công! Hóa đơn đã được tạo.")
@@ -383,6 +381,7 @@ else:
         st.header("🧾 HÓA ĐƠN THANH TOÁN")
 
         st.markdown("### 🧋 TIỆM TRÀ HOÀNG HÔN")
+
         st.write(f"**Mã hóa đơn:** {st.session_state.invoice_no}")
         st.write(f"**Khách hàng:** {st.session_state.customer}")
         st.write(f"**Thời gian:** {st.session_state.paid_time}")
@@ -390,7 +389,9 @@ else:
 
         invoice_rows = []
 
-        for index, item in enumerate(st.session_state.cart, start=1):
+        for index, item in enumerate(
+            st.session_state.cart, start=1
+        ):
             invoice_rows.append({
                 "STT": index,
                 "Tên món": item["name"],
@@ -439,4 +440,6 @@ else:
 # 11. CHÂN TRANG
 # ==========================================
 st.divider()
-st.caption("© Tiệm trà Hoàng hôn | Chúc bạn một ngày thật ngọt ngào 🌅")
+st.caption(
+    "© Tiệm trà Hoàng hôn | Chúc bạn một ngày thật ngọt ngào 🌅"
+)
